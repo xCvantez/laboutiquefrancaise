@@ -2,9 +2,11 @@
 
 namespace App\Repository;
 
+
+use App\Classe\Search;
 use App\Entity\Product;
-use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
+use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 
 /**
  * @extends ServiceEntityRepository<Product>
@@ -39,6 +41,40 @@ class ProductRepository extends ServiceEntityRepository
         }
     }
 
+   /**
+     * Requête qui me permet de récupérer les produits en fonction de la recherche de l'utilisateur
+     * @return Product[]
+     */
+    public function findWithSearch(Search $search) {
+
+        $query = $this
+            // Je créer la requete à l'aide de la table product
+            ->createQueryBuilder('p')
+            // Je sélecte les tables catégory et product
+            ->select('c', 'p')
+              // Je join la catégory dans la table product et category dans la table cotegory
+               // je fais ma jointure , je joint la catégorie a la table product, et product a la table catégorie
+            ->join('p.category', 'c');
+
+            // Si l'uilisateur renseigne un catégorie à rechercher
+            // si elle est vide r'ajouter andWhere comme paramètre si categories id est dans categories
+        if (!empty($search->categories)) {
+            $query = $query
+                ->andWhere('c.id IN (:categories)')
+                ->setParameter('categories', $search->categories);
+        }
+
+        if (!empty($search->string)) {
+            $query = $query
+                ->andWhere('p.name LIKE :string')
+                ->setParameter('string', "%$search->string%");
+        }
+
+        //crée la requête et retourne les resultat
+        return $query->getQuery()->getResult();
+    }
+}
+
 //    /**
 //     * @return Product[] Returns an array of Product objects
 //     */
@@ -63,4 +99,4 @@ class ProductRepository extends ServiceEntityRepository
 //            ->getOneOrNullResult()
 //        ;
 //    }
-}
+
