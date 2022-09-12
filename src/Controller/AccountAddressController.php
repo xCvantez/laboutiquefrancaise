@@ -52,8 +52,62 @@ class AccountAddressController extends AbstractController
 
 
 
-        return $this->render('account/address_add.html.twig',[
+        return $this->render('account/address_form.html.twig',[
             'form' => $form->createView()
         ]);
     }
-}
+
+    #[Route('/compte/modifier-une-adresse/{id}', name: 'app_address_edit')]
+    public function edit(Request $request,$id): Response
+    {
+       //Je récupère l'adresse concerné à l'aide de doctrine en base de données
+        $address = $this->entityManager->getRepository(Address::class)->findOneById($id);
+
+            //Si il n'y a aucune adresse et ne correspont pas à celui qui est actuellement connecté à l'utilisateur
+        if (!$address || $address->getUser() != $this->getUser()){
+            return $this->redirectToRoute('app_account_address');
+        }
+
+        // Je passe en paramètres à ma fonction createForm() Le type du formulaire et L'objet
+        $form = $this->createForm(AddressType::class, $address);
+        // Ecoute la Requête
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $address->setUser($this->getUser());
+            //Fige la data
+
+            //Exécute 
+            $this->entityManager->flush();
+
+            return $this->redirectToRoute('app_account_address');
+            // dd($address);
+        }
+        
+
+
+
+        return $this->render('account/address_form.html.twig',[
+            'form' => $form->createView()
+        ]);
+    }
+    //Je passe en paramètre à mon url l'id de l'adresse
+    #[Route('/compte/supprimer-une-adresse/{id}', name: 'app_address_delete')]
+    public function delete($id): Response
+    {
+        // je recup l'adresse concerné à l'aide de doctrine en base de donnés (id)
+        $address = $this->entityManager->getRepository(Address::class)->findOneById($id);
+
+        // Si il n'y a aucune adresse ou que l'utilisateur ne correspond pas à celui actuellement connecté
+        if (!$address || $address->getUser() == $this->getUser()) {
+            $this->entityManager->remove($address);
+        }
+
+            // dd($address);
+
+            // Exécute
+            $this->entityManager->Flush();
+           return $this->redirectToRoute('app_account_address');
+
+        }
+    }
